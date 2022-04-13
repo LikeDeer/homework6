@@ -62,7 +62,7 @@ int main()
 		printf("Command = ");
 		scanf(" %c", &command);
 
-		/*** 명령어 입력에 2개 문자 이상 입력했을 때 오류 처리(다시 입력하도록 함) ***/
+		/*** 오류 처리 : 명령어 입력에 2개 문자 이상 입력했을 때 다시 입력하도록 함 ***/
 		if (getchar() != '\n') {
 			printf("Sorry.. It was hard to understand...\n");
 			command = '\0';
@@ -150,6 +150,7 @@ int freeList(headNode* h){
 
 /**
  * list 처음에 key에 대한 노드하나를 추가
+ *   첫 노드로 무조건 삽입
  */
 int insertFirst(headNode* h, int key) {
 
@@ -172,12 +173,12 @@ int insertNode(headNode* h, int key) {
 		h->first->link = NULL;
 	}
 	/* 공백 리스트 아닌 경우 */
-	 /* 구현을 다르게 해야할 3가지 경우가 있다.
+	 /* 고려해야 할 3가지 경우가 있다.
 	 	 1. 첫 번째 노드의 key가 입력 key보다 커서 첫 번째 노드로 삽입 해야할 때,
-		 2. 중간에서, 입력받은 key보다 큰값을 가진 노드가 발견되어 그 앞에 삽입할 때,
-		 3. 입력 key가 가장 큰값이어서 마지막에 삽입해야 할 때. 
+		 2. 입력받은 key보다 큰 값을 가진 노드가 중간에서 발견되어 그 앞에 삽입할 때,
+		 3. 입력 key가 가장 큰 값이어서 마지막에 삽입해야 할 때. 
 		** 1번에서 insertFirst, 3번에서 insertLast 함수를 호출할 수도 있지만,
-			검색 과정을 또 거쳐야할 시간 손해를 줄이기 위해 직접 링크를 재설정하며 삽입하였다.** */
+			검색 과정을 또 거쳐야할 시간 손해를 줄이기 위해 직접 삽입하였다.** */
 	else {
 		listNode* temp = (listNode*)malloc(sizeof(listNode));
 		listNode* search = h->first;
@@ -191,22 +192,22 @@ int insertNode(headNode* h, int key) {
 			h->first = temp;
 		}
 		/* 1번이 아닌 경우. trail이 search가 가리키는 노드의 이전 노드를 가리키며 따라가
-			혹여나 중간에 노드 삽입이 필요할 때(2번 경우) 활용할 수 있도록 한다 */
+			혹여나 중간에 노드 삽입이 필요할 때(2번 경우) 이것을 활용하여 삽입할 수 있도록 한다 */
 		else {
 			trail = search;
-			while (search->link != NULL) {
-				trail = search;
-				search = search->link;
+			while (search->link != NULL) {		// 연결리스트 끝까지,
+				trail = search;					//  trail은 search를 한 노드 뒤처져서 따라가며
+				search = search->link;			//  search로 탐색
 
-				if (search->key > key) {
-					temp->link = search;
-					trail->link = temp;
-
-					return 0;
+				if (search->key > key) {		// 2번 경우. 탐색 중 입력값 보다 큰값의 노드를 만났을 때,
+					temp->link = search;		//  그 앞에 노드를 삽입하는 과정:
+					trail->link = temp;			//   	search 보다 한 노드 뒤처진 trail을 활용해 삽입.
+												//
+					return 0;					//   	insertNode 종료
 				}
 			}
-			/* 3번 경우. search가 가리키는 노드의 link가 NULL이면 새로운 노드는4
-				그 다음인 마지막에 추가된다. */
+			/* 3번 경우. search가 가리키는 노드의 link가 NULL이면 새로운 노드는
+				 리스트 마지막에 추가된다. */
 			search->link = temp;
 			temp->link = NULL;
 		}
@@ -217,6 +218,7 @@ int insertNode(headNode* h, int key) {
 
 /**
  * list에 key에 대한 노드하나를 추가
+ *   마지막 노드로 무조건 삽입(추가)
  */
 int insertLast(headNode* h, int key) {
 	listNode* temp = (listNode*)malloc(sizeof(listNode));
@@ -224,13 +226,13 @@ int insertLast(headNode* h, int key) {
 
 	temp->key = key;
 
-	if (searchLast == NULL) {
-		insertFirst(h, key);
+	if (searchLast == NULL) {		// 공백 리스트 이었다면,
+		insertFirst(h, key);		// insertFirst
 	}
 	else {
-		while (searchLast->link) searchLast = searchLast->link;
-
-		searchLast->link = temp;
+		while (searchLast->link) searchLast = searchLast->link;		// searchLast가
+																	// 마지막 노드를 가리킬때 까지.
+		searchLast->link = temp;									// 가리키면, 마지막에 삽입
 		temp->link = NULL;
 	}
 
@@ -242,7 +244,16 @@ int insertLast(headNode* h, int key) {
  * list의 첫번째 노드 삭제
  */
 int deleteFirst(headNode* h) {
+	listNode* x = h->first;
 
+	/* 공백 리스트인 경우 */
+	if (h->first == NULL) {
+		printf("Nothing to delete.\n");
+		return 1;
+	}
+
+	h->first = h->first->link;
+	free(x);
 
 	return 0;
 }
@@ -252,15 +263,51 @@ int deleteFirst(headNode* h) {
  * list에서 key에 대한 노드 삭제
  */
 int deleteNode(headNode* h, int key) {
+	/* 공백 리스트인 경우 */
+	if (h->first == NULL) {
+		printf("Nothing to delete.\n");
+		return 1;
+	}
 
+	listNode* searchKey = h->first;
+	listNode* trail = NULL;
+
+	while ((searchKey) && (h->first->key == key)) {
+		h->first = searchKey->link;
+		free(searchKey);
+		searchKey = h->first;
+	}
+
+	while (searchKey) {
+		if (searchKey->key == key) {
+			trail->link = searchKey->link;
+			free(searchKey);
+			searchKey = trail->link;
+		} 
+		else {
+			trail = searchKey;
+			searchKey = searchKey->link;
+		}
+	}
+
+	/*
+	while (searchKey->link != NULL) {		// searchKey->link == NULL 이면 연결리스트의 끝
+		if (searchKey->key == key) {
+			trail->link = searchKey->link;
+			free(searchKey);
+		}
+		trail = searchKey;
+		searchKey = searchKey->link;
+	}
+	*/
 	return 0;
-
 }
 
 /**
  * list의 마지막 노드 삭제
  */
 int deleteLast(headNode* h) {
+	
 
 	return 0;
 }
