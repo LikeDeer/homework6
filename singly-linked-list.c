@@ -39,7 +39,9 @@ int invertList(headNode* h);
 
 void printList(headNode* h);
 
+/* ------------ 개인 정의 함수 (설명은 아래 함수 정의에 서술) ------------ */
 int IsInitialized(headNode* h);
+int Scanf(int* k);
 
 
 int main()
@@ -81,17 +83,20 @@ int main()
 			break;
 		case 'i': case 'I':
 			printf("Your Key = ");
-			scanf("%d", &key);
+			// scanf("%d", &key);
+			if (Scanf(&key)) break;			// key에 정수가 아닌 입력값이 들어오면 수행 취소하도록 수정.
 			insertNode(headnode, key);
 			break;
 		case 'd': case 'D':
 			printf("Your Key = ");
-			scanf("%d", &key);
+			// scanf("%d", &key);
+			if (Scanf(&key)) break;			// key에 정수가 아닌 입력값이 들어오면 수행 취소하도록 수정.
 			deleteNode(headnode, key);
 			break;
 		case 'n': case 'N':
 			printf("Your Key = ");
-			scanf("%d", &key);
+			// scanf("%d", &key);
+			if (Scanf(&key)) break;			// key에 정수가 아닌 입력값이 들어오면 수행 취소하도록 수정.
 			insertLast(headnode, key);
 			break;
 		case 'e': case 'E':
@@ -99,7 +104,8 @@ int main()
 			break;
 		case 'f': case 'F':
 			printf("Your Key = ");
-			scanf("%d", &key);
+			// scanf("%d", &key);
+			if (Scanf(&key)) break;			// key에 정수가 아닌 입력값이 들어오면 수행 취소하도록 수정.
 			insertFirst(headnode, key);
 			break;
 		case 't': case 'T':
@@ -168,8 +174,8 @@ int insertFirst(headNode* h, int key) {
 	listNode* node = (listNode*)malloc(sizeof(listNode));
 	node->key = key;
 
-	node->link = h->first;
-	h->first = node;
+	node->link = h->first;		// 새로운 노드의 link를 원래 헤드가 가리키던 노드에 연결
+	h->first = node;			// 헤드의 link를 새로운 노드에 연결
 
 	return 0;
 }
@@ -280,7 +286,8 @@ int deleteFirst(headNode* h) {
 		printf("Nothing to delete.\n");
 		return 1;
 	}
-
+	
+	/* 헤드가 가리키는 노드 제거 */
 	h->first = h->first->link;
 	free(x);
 
@@ -352,16 +359,17 @@ int deleteLast(headNode* h) {
 		return 1;
 	}
 
+	/* 공백 리스트가 아닌 경우 */
 	listNode* searchLast = h->first;
-	listNode* trail = NULL;
-
-	while (searchLast->link) {
+	listNode* trail = NULL;					// 마지막 노드 삭제 후 이전 노드의 link를
+											//	NULL로 초기화 하기위한 trail
+	while (searchLast->link) {				// searchLast가 마지막 노드를 가리키면 탐색 종료
 		trail = searchLast;
 		searchLast = searchLast->link;
 	}
 
-	free(searchLast);
-	trail->link = NULL;
+	free(searchLast);						// 마지막 노드를 제거
+	trail->link = NULL;						// 이전 노드의 link = NULL
 
 	return 0;
 }
@@ -386,13 +394,13 @@ int invertList(headNode* h) {
 	listNode* trail,* middle;
 
 	middle = NULL;
-	while (h->first) {
-		trail = middle;
-		middle = h->first;
-		h->first = h->first->link;
-		middle->link = trail;
+	while (h->first) {					// 헤드가 마지막 노드까지 지나가며 노드들의 재배열이 완료되면 반복 종료
+		trail = middle;					// lead, middle, trail 배치 
+		middle = h->first;				//  ~
+		h->first = h->first->link;		//  ~
+		middle->link = trail;			// 반대 방향으로 연결 재설정
 	}
-	h->first = middle;
+	h->first = middle;					// 헤드가 재배치된 리스트의 첫 노드를 가리키면 invert 완료
 
 	return 0;
 }
@@ -420,11 +428,28 @@ void printList(headNode* h) {
 	printf("  items = %d\n", i);
 }
 
-/* ------- 개인 정의 함수 ------- */
+
+/* ------------ 개인 정의 함수 ------------ */
 
 /* initialize 안하고 insert나 delete의 command를 입력하면 Segmentation fault.
 	각 기능을 수행하기 전에 initialized 됐는지 확인하는 전처리용 함수. */
 int IsInitialized(headNode* h) {
 	if (h == NULL) return 1;
 	else return 0;
+}
+
+/* main의 scanf("%d", &key)를 대체하는 함수. key에 정수를 입력 받는다 */
+ /* 기존에서는 'Your key = '에 정수가 아닌 문자 등 다른 값을 입력하면
+ 	다음 프로그램 진행에 장애가 생긴다. 정수가 아닌 값을 입력 받으면 insert, delete 등
+	수행을 하지 않고 버퍼를 비우도록 하여 문제를 해결하였다. */
+int Scanf(int* k) {
+	if (scanf("%d", k) == 1) {			// 제대로 정수를 입력 받으면 scanf의 반환값은 1(읽은 항목의 개수)
+		while (getchar() != '\n');
+		return 0;
+	}
+	else {
+		printf("Not appropriate input. Input must be an integer. Try again.\n");
+		while (getchar() != '\n');
+		return 1;
+	}
 }
