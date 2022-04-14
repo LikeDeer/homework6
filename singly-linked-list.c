@@ -39,6 +39,8 @@ int invertList(headNode* h);
 
 void printList(headNode* h);
 
+int IsInitialized(headNode* h);
+
 
 int main()
 {
@@ -135,6 +137,10 @@ int freeList(headNode* h){
 	/* h와 연결된 listNode 메모리 해제
 	 * headNode도 해제되어야 함.
 	 */
+
+	if (IsInitialized(h))		// initialize 되지 않은 채로 프로그램을 종료하기를 시도하면
+		return 1;				// Segmentation fault로 비정상 종료되는 것을 방지.
+
 	listNode* p = h->first;
 
 	listNode* prev = NULL;
@@ -153,6 +159,11 @@ int freeList(headNode* h){
  *   첫 노드로 무조건 삽입
  */
 int insertFirst(headNode* h, int key) {
+	/* 전처리 */
+	if (IsInitialized(h)) {
+		printf("Please initialize first and try again.\n");
+		return 1;
+	}
 
 	listNode* node = (listNode*)malloc(sizeof(listNode));
 	node->key = key;
@@ -166,6 +177,12 @@ int insertFirst(headNode* h, int key) {
 
 /* 리스트를 검색하여, 입력받은 key보다 큰값이 나오는 노드 바로 앞에 삽입 */
 int insertNode(headNode* h, int key) {
+	/* 전처리 */
+	if (IsInitialized(h)) {
+		printf("Please initialize first and try again.\n");
+		return 1;
+	}
+
 	/* 공백 리스트인 경우 */
 	if (IS_EMPTY(h->first)) {
 		h->first = (listNode*)malloc(sizeof(listNode));
@@ -221,6 +238,12 @@ int insertNode(headNode* h, int key) {
  *   마지막 노드로 무조건 삽입(추가)
  */
 int insertLast(headNode* h, int key) {
+	/* 전처리 */
+	if (IsInitialized(h)) {
+		printf("Please initialize first and try again.\n");
+		return 1;
+	}
+
 	listNode* temp = (listNode*)malloc(sizeof(listNode));
 	listNode* searchLast = h->first;
 
@@ -244,6 +267,12 @@ int insertLast(headNode* h, int key) {
  * list의 첫번째 노드 삭제
  */
 int deleteFirst(headNode* h) {
+	/* 전처리 */
+	if (IsInitialized(h)) {
+		printf("Please initialize first and try again.\n");
+		return 1;
+	}
+
 	listNode* x = h->first;
 
 	/* 공백 리스트인 경우 */
@@ -263,6 +292,12 @@ int deleteFirst(headNode* h) {
  * list에서 key에 대한 노드 삭제
  */
 int deleteNode(headNode* h, int key) {
+	/* 전처리 */
+	if (IsInitialized(h)) {
+		printf("Please initialize first and try again.\n");
+		return 1;
+	}
+
 	/* 공백 리스트인 경우 */
 	if (h->first == NULL) {
 		printf("Nothing to delete.\n");
@@ -272,34 +307,32 @@ int deleteNode(headNode* h, int key) {
 	listNode* searchKey = h->first;
 	listNode* trail = NULL;
 
-	while ((searchKey) && (h->first->key == key)) {
-		h->first = searchKey->link;
-		free(searchKey);
-		searchKey = h->first;
+	/* first가 가리키는 노드부터 입력 key값을 갖고 있을 때, */
+	 /* 이 노드부터 key를 갖고있지 않은 노드가 나올때 까지 반복. ---> (1)
+	 	정말 특수하게, 모든 노드가 동일하게 입력 key값을 갖고있을 수 있다.
+		여기서 마지막 노드까지 제거한다면 searchKey == NULL.
+		이후 과정을 수행하지 않고 함수 return */
+	while ((searchKey) && (h->first->key == key)) {		// 두 항의 순서를 바꾸면 안됨!
+		h->first = searchKey->link;						//   전술한 특수한 경우에서 마지막 노드를 제거한 후에는
+		free(searchKey);								//   h->first == NULL 이므로 
+		searchKey = h->first;							//   Segmentation fault 오류 가능
 	}
 
-	while (searchKey) {
-		if (searchKey->key == key) {
-			trail->link = searchKey->link;
-			free(searchKey);
-			searchKey = trail->link;
+
+	/* 입력 key값을 갖고있지 않은 노드가 발견되면, (1) */
+	while (searchKey) {					// 마지막 노드까지 탐색 완료될 때까지
+		if (searchKey->key == key) {			// searchKey가 가리키는 노드가 입력 key값을 갖고있다면
+			trail->link = searchKey->link;		//   1. 이전 노드의 link를 삭제할 노드의 다음 노드로 연결한다.
+			free(searchKey);					//   2. searchKey가 가리키는 노드를 제거한다.
+			searchKey = trail->link;			//   3. searchKey가 다음 노드를 가리키게 되며, 탐색을 위한 상태로 복귀한다.
 		} 
-		else {
-			trail = searchKey;
-			searchKey = searchKey->link;
+		else {									// searchKey가 가리키는 노드의 key값이 일치하지 않으면
+			trail = searchKey;					//   trail과 searchKey를 다음 노드로 이동
+			searchKey = searchKey->link;		//   * trail은 searchKey를 한 노드 뒤따라가며 삭제 과정을 보조한다.
 		}
 	}
 
-	/*
-	while (searchKey->link != NULL) {		// searchKey->link == NULL 이면 연결리스트의 끝
-		if (searchKey->key == key) {
-			trail->link = searchKey->link;
-			free(searchKey);
-		}
-		trail = searchKey;
-		searchKey = searchKey->link;
-	}
-	*/
+	
 	return 0;
 }
 
@@ -307,7 +340,28 @@ int deleteNode(headNode* h, int key) {
  * list의 마지막 노드 삭제
  */
 int deleteLast(headNode* h) {
-	
+	/* 전처리 */
+	if (IsInitialized(h)) {
+		printf("Please initialize first and try again.\n");
+		return 1;
+	}
+
+	/* 공백 리스트인 경우 */
+	if (h->first == NULL) {
+		printf("Nothing to delete.\n");
+		return 1;
+	}
+
+	listNode* searchLast = h->first;
+	listNode* trail = NULL;
+
+	while (searchLast->link) {
+		trail = searchLast;
+		searchLast = searchLast->link;
+	}
+
+	free(searchLast);
+	trail->link = NULL;
 
 	return 0;
 }
@@ -317,6 +371,28 @@ int deleteLast(headNode* h) {
  * 리스트의 링크를 역순으로 재 배치
  */
 int invertList(headNode* h) {
+	/* 전처리 */
+	if (IsInitialized(h)) {
+		printf("Please initialize first and try again.\n");
+		return 1;
+	}
+
+	/* 공백 리스트인 경우 */
+	if (h->first == NULL) {
+		printf("Nothing to invert.\n");
+		return 1;
+	}
+
+	listNode* trail,* middle;
+
+	middle = NULL;
+	while (h->first) {
+		trail = middle;
+		middle = h->first;
+		h->first = h->first->link;
+		middle->link = trail;
+	}
+	h->first = middle;
 
 	return 0;
 }
@@ -344,3 +420,11 @@ void printList(headNode* h) {
 	printf("  items = %d\n", i);
 }
 
+/* ------- 개인 정의 함수 ------- */
+
+/* initialize 안하고 insert나 delete의 command를 입력하면 Segmentation fault.
+	각 기능을 수행하기 전에 initialized 됐는지 확인하는 전처리용 함수. */
+int IsInitialized(headNode* h) {
+	if (h == NULL) return 1;
+	else return 0;
+}
